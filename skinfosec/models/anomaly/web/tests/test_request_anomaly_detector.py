@@ -10,7 +10,16 @@ def test_preprocess_requests():
     example = '127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326'
     X = preprocess_requests([example])
     #TODO: Include assertions for all fields.
+    assert(X.remote_host[0] == "127.0.0.1")
+    assert(X.remote_user[0] == "-")
+    assert(X.remote_logname[0] == "frank")
+    #time_received_tz_datetimeobj type is pandas.tslib.Timestamp
+    #assert(X.time_received_tz_datetimeobj[0] == "2000-10-10 20:55:36")
+    assert(X.request_http_ver[0] == "1.0")
+    assert(X.request_method[0] == "GET")
     assert(X.request_url[0] == "/apache_pb.gif")
+    assert(X.status[0] == "200")
+    assert(X.response_bytes_clf[0] == "2326")
 
 def test_anomaly_detector():
     """Test the anomaly detector
