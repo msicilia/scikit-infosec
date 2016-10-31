@@ -1,8 +1,8 @@
-
 from ..base import BaseAnomalyDetector
 from sklearn.base import BaseEstimator, ClusterMixin
 import pandas as pd
 from apache_log_parser import make_parser
+import logging
 
 def preprocess_requests(data, format="CLF"):
     """Gets data in Common Log File Format (CLF).
@@ -12,19 +12,24 @@ def preprocess_requests(data, format="CLF"):
     """
     #SEE: https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
     if format == "CLF":
-        cols=["remote_host", "remote_user", "remote_logname",
+        cols=["remote_host", "remote_logname", "remote_user",
                "time_received_tz_datetimeobj", "request_http_ver", "request_method",
                "request_url", "status", "response_bytes_clf"]
-        X = pd.DataFrame(columns=cols)
-        parser = make_parser('%h %u %l %t \"%r\" %>s %b')
-        for line in data:
-            parsed = parser(line)
-            filtered = {k: v for k, v in parsed.items() if k in cols}
-            #print filtered
-            X = X.append(filtered, ignore_index=True)
+        parser = make_parser('%h %l %u %t \"%r\" %>s %b')
+    elif format == "Combined":
+        cols=["remote_host", "remote_logname", "remote_user",
+               "time_received_tz_datetimeobj", "request_http_ver", "request_method",
+               "request_url", "status", "response_bytes_clf", "request_header_referer",
+               "request_header_user_agent"]
+        parser = make_parser('%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"')
     else:
-         raise ValueError("format must be CLF - Common Log Format")
-
+         raise ValueError("format must be CLF or Combined")
+    X = pd.DataFrame(columns=cols)
+    for line in data:
+        parsed = parser(line)
+        filtered = {k: v for k, v in parsed.items() if k in cols}
+        #print filtered
+        X = X.append(filtered, ignore_index=True)
     return X
 
 class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
@@ -61,7 +66,11 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
         """
         anomalies = {}
         anomalous = pd.DataFrame()
-        norm_model = self.attribute_models_["uri_length"]
+        try:
+            norm_model = self.attribute_models_["uri_length"]
+        except AttributeError:
+            logging.warning('RequestAnomalyDetector: call to preditct() without previous fit()')
+            return anomalies
         for index, row in X.iterrows():
             # TODO: Check more anomaly models
             if len(row.request_url) > norm_model[0] + 2*norm_model[1]:
