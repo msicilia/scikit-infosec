@@ -1,1 +1,5 @@
-from classes import RequestAnomalyDetector
+'''
+Web package
+'''
+
+import skinfosec.models.anomaly.web.classes

@@ -1,30 +1,42 @@
+"""
+Classes and functions for anomaly detection over webserver log files.
+"""
 
-from ..base import BaseAnomalyDetector
+import logging
 from sklearn.base import BaseEstimator, ClusterMixin
 import pandas as pd
 from apache_log_parser import make_parser
+from ..base import BaseAnomalyDetector
 
-def preprocess_requests(data, format="CLF"):
+def preprocess_requests(data, log_format="CLF"):
     """Gets data in Common Log File Format (CLF).
     Returns
     -------
     A dataframe with the pased data.
     """
     #SEE: https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
-    if format == "CLF":
-        cols=["remote_host", "remote_user", "remote_logname",
-               "time_received_tz_datetimeobj", "request_http_ver", "request_method",
-               "request_url", "status", "response_bytes_clf"]
-        X = pd.DataFrame(columns=cols)
-        parser = make_parser('%h %u %l %t \"%r\" %>s %b')
-        for line in data:
-            parsed = parser(line)
-            filtered = {k: v for k, v in parsed.items() if k in cols}
-            #print filtered
-            X = X.append(filtered, ignore_index=True)
+    if log_format == "CLF":
+        cols = ["remote_host", "remote_logname", "remote_user",
+                "time_received_tz_datetimeobj", "request_http_ver", "request_method",
+                "request_url", "status", "response_bytes_clf"]
+        parser = make_parser('%h %l %u %t \"%r\" %>s %b')
+    elif log_format == "Combined":
+        cols = ["remote_host", "remote_logname", "remote_user",
+                "time_received_tz_datetimeobj", "request_http_ver", "request_method",
+                "request_url", "status", "response_bytes_clf", "request_header_referer",
+                "request_header_user_agent"]
+        parser = make_parser('%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"')
     else:
-         raise ValueError("format must be CLF - Common Log Format")
-
+        raise ValueError("format must be CLF or Combined")
+    #X = pd.DataFrame(columns=cols)
+    #Temporary list to feed the final DataFrame (Performance)
+    tmp = []
+    for line in data:
+        parsed = parser(line)
+        filtered = {k: v for k, v in parsed.items() if k in cols}
+        tmp.append(filtered)
+        #X = X.append(filtered, ignore_index=True)
+    X = pd.DataFrame(tmp, columns=cols)
     return X
 
 class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
@@ -34,6 +46,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
     ----------
    """
     def __init__(self):
+        self.attribute_models_ = {}
         return
 
     def fit(self, X, y=None):
@@ -45,7 +58,6 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
         """
         #TODO: Add other attributes of Web traffic.
         # Now it checks only URL length.
-        self.attribute_models_={}
         # Get mean and std
         lengths = X["request_url"].str.len()
         self.attribute_models_["uri_length"] = (lengths.mean(), lengths.std())
@@ -61,7 +73,11 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin,
         """
         anomalies = {}
         anomalous = pd.DataFrame()
-        norm_model = self.attribute_models_["uri_length"]
+        try:
+            norm_model = self.attribute_models_["uri_length"]
+        except AttributeError:
+            logging.warning('RequestAnomalyDetector: call to preditct() without previous fit()')
+            return anomalies
         for index, row in X.iterrows():
             # TODO: Check more anomaly models
             if len(row.request_url) > norm_model[0] + 2*norm_model[1]:
