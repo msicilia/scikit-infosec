@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
-data = darpa_intrusion.fetch_darpa_intrusion(subset='sample_1998')
+#data = darpa_intrusion.fetch_darpa_intrusion(subset='sample_1998')
 #data = darpa_intrusion.fetch_darpa_intrusion(subset='train_4hour_1998')
 
 #data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_mon_1998')
@@ -21,12 +21,12 @@ data = darpa_intrusion.fetch_darpa_intrusion(subset='sample_1998')
 #data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_fri_1998')
 
 #data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_mon_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_tue_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_wed_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_thu_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_fri_1998')
+#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_tue_1998')
+#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_wed_1998')
+#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3thu_1998')
+#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_fri_1998')
 
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='test_w1_mon_1998')
+data = darpa_intrusion.fetch_darpa_intrusion(subset='test_w1_mon_1998')
 
 
 X = data[0]
