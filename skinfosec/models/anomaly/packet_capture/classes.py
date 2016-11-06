@@ -20,7 +20,7 @@ def preprocess_capture(data, cap_format="pcapng", transp_layer="TCP", capture_fi
     if transp_layer == "TCP":
         display_filter = "tcp"
     else:
-        raise ValueError("transport layer must be TCP")
+        raise ValueError('transport layer must be TCP')
     capt = pyshark.FileCapture(data, display_filter=display_filter)
 
     #Temporary list to feed the final DataFrame (Performance)

@@ -16,10 +16,10 @@ import stat
 import pandas as pd
 from ..models.anomaly.packet_capture import classes as anon_pcap
 
-def _parse_darpa_list_file(filename):
+def _parse_darpa_list_file(listfile_str):
     result_list = []
-    with open(filename) as listfile:
-        for line in listfile:
+    with open(listfile_str) as listfile_h:
+        for line in listfile_h:
             result_list.append(line.split())
     return result_list
 
@@ -27,6 +27,12 @@ def _parse_darpa_list_file(filename):
 def _del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
+#Check if all files in a list exist
+def _check_files(file_list):
+    for filepath in file_list:
+        if not os.path.isfile(filepath):
+            return False
+    return True
 
 #Match tcpdump and list file
 def _match_dump_list(dumpfile, listfile):
@@ -52,105 +58,125 @@ def _match_dump_list(dumpfile, listfile):
     return (dataset, target)
 
 def _download_sample_1998(darpa_directory, download_if_missing):
-    #Download files
-    darpa_file = urllib.URLopener()
-    filepath = darpa_directory+"/sample_1998-DARPA_eval_b.tar.gz"
-    url = "https://www.ll.mit.edu/ideval/data/1998/training/sample/DARPA_eval_b.tar.gz"
-
-    if not os.path.isfile(filepath):
+    dumpfile_str = darpa_directory+"/sample_1998-sample_data01.tcpdump"
+    listfile_str = darpa_directory+"/sample_1998-sample_data01.tcpdump.list"
+    if _check_files([dumpfile_str, listfile_str]):
+        logging.info("Dump file exists: %s", dumpfile_str)
+        logging.info("List file exists: %s", listfile_str)
+        return (dumpfile_str, listfile_str)
+    #Implicit else
+    #Local files doesn't exist
+    tarfile_str = darpa_directory+"/sample_1998-DARPA_eval_b.tar.gz"
+    if not os.path.isfile(tarfile_str):
         if not download_if_missing:
             raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-    #End of Download
-
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        url = "https://www.ll.mit.edu/ideval/data/1998/training/sample/DARPA_eval_b.tar.gz"
+        logging.info("Downloading : %s to %s", url, tarfile_str)
+        darpa_down.retrieve(url, tarfile_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile_str)
     #File Extraction
     #extracting first file (tar.gz)
-    logging.info("Extracting %s", filepath)
-    tar_file = tarfile.open(filepath, "r:gz")
-    tar_file.extractall(path=darpa_directory)
-    tar_file.close()
-    filepath = darpa_directory+"/DARPA_eval_b/sample_data01.tcpdump.gz"
+    logging.info("Extracting %s", tarfile_str)
+    with tarfile.open(tarfile_str, "r:gz") as tarfile_h:
+        tarfile_h.extractall(path=darpa_directory)
+    tmpfile_str = darpa_directory+"/DARPA_eval_b/sample_data01.tcpdump.gz"
     #extracting second file (gz)
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    dumpfile = darpa_directory+"/sample_1998-sample_data01.tcpdump"
-    output_file = open(dumpfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    logging.info("Extracting %s", tmpfile_str)
+    with gzip.open(tmpfile_str, 'rb') as tmpfile_h:
+        with open(dumpfile_str, 'wb') as output_file_h:
+            output_file_h.write(tmpfile_h.read())
+    tmpdir_str = darpa_directory+"/DARPA_eval_b"
     #Moving list file
-    listfile = darpa_directory+"/sample_1998-sample_data01.tcpdump.list"
-    shutil.move(darpa_directory+"/DARPA_eval_b/tcpdump.list", listfile)
+    shutil.move(tmpdir_str+"/tcpdump.list", listfile_str)
     #deleting intermediate folder
     try:
-        logging.info("deleting "+darpa_directory+"/DARPA_eval_b")
-        shutil.rmtree(darpa_directory+"/DARPA_eval_b")
+        logging.info("deleting "+tmpdir_str)
+        shutil.rmtree(tmpdir_str)
     except OSError:
         pass
-    return (dumpfile, listfile)
+    logging.info("Deleting tar file: %s", tarfile_str)
+    os.remove(tarfile_str)
+    return (dumpfile_str, listfile_str)
 
 def _download_train_4hour_1998(darpa_directory, download_if_missing):
-    darpa_file = urllib.URLopener()
-    filepath = darpa_directory+"/train_4hour_1998-tcpdump.gz"
-    url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/tcpdump.gz"
-    if not os.path.isfile(filepath):
+    dumpfile_str = darpa_directory+"/train_4hour_1998-outside.tcpdump"
+    listfile_str = darpa_directory+"/train_4hour_1998-outside.tcpdump.list"
+    if _check_files([dumpfile_str, listfile_str]):
+        logging.info("Dump file exists: %s", dumpfile_str)
+        logging.info("List file exists: %s", listfile_str)
+        return (dumpfile_str, listfile_str)
+    #Implicit else
+    #Local files doesn't exist
+    tarfile_str = darpa_directory+"/train_4hour_1998-tcpdump.gz"
+    if not os.path.isfile(tarfile_str):
         if not download_if_missing:
             raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-    #End of Download
-
-    #File Extraction
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/tcpdump.gz"
+        logging.info("Downloading : %s to %s", url, tarfile_str)
+        darpa_down.retrieve(url, tarfile_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile_str)
+    #Dump file Extraction
     #extracting first file (tar)
-    logging.info("Extracting %s", filepath)
-    tar_file = tarfile.open(filepath, "r:")
-    tar_file.extractall(path=darpa_directory)
-    tar_file.close()
-    filepath = darpa_directory+"/outside.tcpdump.gz"
+    logging.info("Extracting %s", tarfile_str)
+    with tarfile.open(tarfile_str, "r:") as tarfile_h:
+        tarfile_h.extractall(path=darpa_directory)
+    tmpfile_str = darpa_directory+"/outside.tcpdump.gz"
     #extracting second file (gz)
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    dumpfile = darpa_directory+"/train_4hour_1998-outside.tcpdump"
-    output_file = open(dumpfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    logging.info("Extracting %s", tmpfile_str)
+    with gzip.open(tmpfile_str, 'rb') as tmpfile_h:
+        with open(dumpfile_str, 'wb') as dumpfile_h:
+            dumpfile_h.write(tmpfile_h.read())
     #deleting intermediate gzip file
     try:
-        logging.info("deleting "+filepath)
-        os.remove(filepath)
+        logging.info("Deleting "+tmpfile_str)
+        os.remove(tmpfile_str)
     except OSError:
         pass
+    logging.info("Deleting tar file: %s", tarfile_str)
+    os.remove(tarfile_str)
     #Retrieving list file
-    url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/fourhour.tar.gz"
-    filepath = darpa_directory+"/train_4hour_1998-fourhour.tar.gz"
-    if not os.path.isfile(filepath):
+    tarfile_str = darpa_directory+"/train_4hour_1998-fourhour.tar.gz"
+    if not os.path.isfile(tarfile_str):
         if not download_if_missing:
             raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-
-    logging.info("Extracting %s", filepath)
-    tar_file = tarfile.open(filepath, "r:gz")
-    tar_file.extractall(path=darpa_directory)
-    tar_file.close()
-    listfile = darpa_directory+"/train_4hour_1998-outside.tcpdump.list"
-    shutil.move(darpa_directory+"/fourhour/data/tcpdump.list",
-                darpa_directory+"/train_4hour_1998-outside.tcpdump.list")
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/fourhour.tar.gz"
+        logging.info("Downloading : %s to %s", url, tarfile_str)
+        darpa_down.retrieve(url, tarfile_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile_str)
+    #List file Extraction
+    logging.info("Extracting %s", tarfile_str)
+    tmpdir_str = darpa_directory+"/fourhour"
+    with tarfile.open(tarfile_str, "r:gz") as tarfile_h:
+        tarfile_h.extractall(path=darpa_directory)
+        shutil.move(tmpdir_str+"/data/tcpdump.list", listfile_str)
     #deleting intermediate folder
     try:
-        logging.info("deleting "+darpa_directory+"/fourhour")
-        shutil.rmtree(darpa_directory+"/fourhour", onerror=_del_rw)
+        logging.info("deleting "+tmpdir_str)
+        #Folder has readonly files
+        shutil.rmtree(tmpdir_str, onerror=_del_rw)
     except OSError:
         pass
-    return (dumpfile, listfile)
+    logging.info("Deleting tar file: %s", tarfile_str)
+    os.remove(tarfile_str)
+    return (dumpfile_str, listfile_str)
 
 def _download_train_w1_w2_1998(subset, darpa_directory, download_if_missing):
     w1_w2_1998 = {'train_w1_mon_1998' : ['train_week1_monday', 'monday'],
@@ -164,54 +190,59 @@ def _download_train_w1_w2_1998(subset, darpa_directory, download_if_missing):
                   'train_w2_thu_1998' : ['train_week2_thursday', 'thursday'],
                   'train_w2_fri_1998' : ['train_week2_friday', 'friday']}
 
-    darpa_file = urllib.URLopener()
     if subset in w1_w2_1998:
         logging.info("Subset: %s", subset)
-        filepath = darpa_directory+"/"+w1_w2_1998[subset][0]+"_1998.tar"
-        dumpfile = darpa_directory+"/"+w1_w2_1998[subset][0]+"_1998-outside.tcpdump"
-        listfile = darpa_directory+"/"+w1_w2_1998[subset][0]+"1998-outside.tcpdump.list"
+        subset_str = darpa_directory+"/"+w1_w2_1998[subset][0]
+        dumpfile_str = subset_str+"_1998-outside.tcpdump"
+        listfile_str = subset_str+"_1998-outside.tcpdump.list"
+        if _check_files([dumpfile_str, listfile_str]):
+            logging.info("Dump file exists: %s", dumpfile_str)
+            logging.info("List file exists: %s", listfile_str)
+            return (dumpfile_str, listfile_str)
+        #Implicit else
+        #Local files doesn't exist
+        tarfile_str = subset_str+"_1998.tar"
         inter_dir = w1_w2_1998[subset][1]
-        url = "https://www.ll.mit.edu/ideval/data/1998/training/week1/"+w1_w2_1998[subset][1]+".tar"
+        url = "https://www.ll.mit.edu/ideval/data/1998/training/week1/"+inter_dir+".tar"
     else:
         raise AttributeError("_download_train_w1_w2_1998: subset not valid")
-    if not os.path.isfile(filepath):
+    if not os.path.isfile(tarfile_str):
         if not download_if_missing:
             raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-            #End of Download
-
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        logging.info("Downloading : %s to %s", url, tarfile_str)
+        darpa_down.retrieve(url, tarfile_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile_str)
     #File Extraction
     #extracting first file (tar)
-    logging.info("Extracting %s", filepath)
-    tar_file = tarfile.open(filepath, "r:")
-    tar_file.extractall(path=darpa_directory)
-    tar_file.close()
-    #extracting dump file (gz)
-    filepath = darpa_directory+"/"+inter_dir+"/tcpdump.gz"
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    output_file = open(dumpfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    logging.info("Extracting %s", tarfile_str)
+    with tarfile.open(tarfile_str, "r:") as tarfile_h:
+        tarfile_h.extractall(path=darpa_directory)
+    #Extracting dump file (gz)
+    tmpfile_str = darpa_directory+"/"+inter_dir+"/tcpdump.gz"
+    logging.info("Extracting %s", tmpfile_str)
+    with gzip.open(tmpfile_str, 'rb') as tmpfile_h:
+        with open(dumpfile_str, 'wb') as dumpfile_h:
+            dumpfile_h.write(tmpfile_h.read())
     #extracting list file (gz)
-    filepath = darpa_directory+"/"+inter_dir+"/tcpdump.list.gz"
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    output_file = open(listfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    tmpfile_str = darpa_directory+"/"+inter_dir+"/tcpdump.list.gz"
+    logging.info("Extracting %s", tmpfile_str)
+    with gzip.open(tmpfile_str, 'rb') as tmpfile_h:
+        with open(listfile_str, 'wb') as listfile_h:
+            listfile_h.write(tmpfile_h.read())
+    #extracting list file (gz)
     #deleting intermediate folder
     try:
         logging.info("deleting "+darpa_directory+"/"+inter_dir)
         shutil.rmtree(darpa_directory+"/"+inter_dir, onerror=_del_rw)
     except OSError:
         pass
-    return (dumpfile, listfile)
+    return (dumpfile_str, listfile_str)
 
 def _download_train_w3_w7_1998(subset, darpa_directory, download_if_missing):
     w3_1998 = {'train_w3_mon_1998' : ['train_week3_monday', 'monday', 'week3'],
@@ -239,53 +270,67 @@ def _download_train_w3_w7_1998(subset, darpa_directory, download_if_missing):
                'train_w7_thu_1998' : ['train_week7_thursday', 'thursday', 'week7'],
                'train_w7_fri_1998' : ['train_week7_friday', 'friday', 'week7']}
 
-    darpa_file = urllib.URLopener()
     if subset in w3_1998:
         logging.info("Subset: %s", subset)
-        filepath = darpa_directory+"/"+w3_1998[subset][0]+"_1998-tcpdump.gz"
-        filepath2 = darpa_directory+"/"+w3_1998[subset][0]+"_1998-tcpdump.list.gz"
-        dumpfile = darpa_directory+"/"+w3_1998[subset][0]+"_1998-outside.tcpdump"
-        listfile = darpa_directory+"/"+w3_1998[subset][0]+"_1998-outside.tcpdump.list"
-        url = ("https://www.ll.mit.edu/ideval/data/1998/training/"
-               +w3_1998[subset][2]+"/"+w3_1998[subset][1]+"/tcpdump.gz")
-        url2 = ("https://www.ll.mit.edu/ideval/data/1998/training/"
-                +w3_1998[subset][2]+"/"+w3_1998[subset][1]+"/tcpdump.list.gz")
+        subset_str = darpa_directory+"/"+w3_1998[subset][0]
+        dumpfile_str = subset_str+"_1998-outside.tcpdump"
+        listfile_str = subset_str+"_1998-outside.tcpdump.list"
+        if _check_files([dumpfile_str, listfile_str]):
+            logging.info("Dump file exists: %s", dumpfile_str)
+            logging.info("List file exists: %s", listfile_str)
+            return (dumpfile_str, listfile_str)
+        #Implicit else
+        #Local files doesn't exist
+        tarfile1_str = subset_str+"_1998-tcpdump.gz"
+        tarfile2_str = subset_str+"_1998-tcpdump.list.gz"
+        inter_url = w3_1998[subset][2]+"/"+w3_1998[subset][1]
+        url1 = ("https://www.ll.mit.edu/ideval/data/1998/training/"+inter_url+
+                "/tcpdump.gz")
+        url2 = ("https://www.ll.mit.edu/ideval/data/1998/training/"+inter_url+
+                "/tcpdump.list.gz")
     else:
-        raise AttributeError("_download_train_w1_w2_1998: subset not valid")
-
-    #Downloading files'
-    if not os.path.isfile(filepath):
+        raise AttributeError("_download_train_w3_w7_1998: subset not valid")
+    if not os.path.isfile(tarfile1_str):
         if not download_if_missing:
-            raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-    if not os.path.isfile(filepath2):
+            raise IOError("Data is not locally available")
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        logging.info("Downloading : %s to %s", url1, tarfile1_str)
+        darpa_down.retrieve(url1, tarfile1_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile1_str)
+    if not os.path.isfile(tarfile2_str):
         if not download_if_missing:
-            raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url2, filepath2)
-            darpa_file.retrieve(url2, filepath2)
-            logging.info("Download completed")
-    #End of Download
+            raise IOError("Data is not locally available")
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        logging.info("Downloading : %s to %s", url2, tarfile2_str)
+        darpa_down.retrieve(url2, tarfile2_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile2_str)
 
-    #extracting dump file (gz)
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    output_file = open(dumpfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
-    #extracting list file (gz)
-    logging.info("Extracting %s", filepath2)
-    gz_file = gzip.open(filepath2, 'rb')
-    output_file = open(listfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    #Extracting dump file (gz)
+    logging.info("Extracting %s", tarfile1_str)
+    with gzip.open(tarfile1_str, 'rb') as tarfile1_h:
+        with open(dumpfile_str, 'wb') as dumpfile_h:
+            dumpfile_h.write(tarfile1_h.read())
+    #Extracting list file (gz)
+    logging.info("Extracting %s", tarfile2_str)
+    with gzip.open(tarfile2_str, 'rb') as tarfile2_h:
+        with open(listfile_str, 'wb') as listfile_h:
+            listfile_h.write(tarfile2_h.read())
+    logging.info("Deleting tar file: %s", tarfile1_str)
+    os.remove(tarfile1_str)
+    logging.info("Deleting tar file: %s", tarfile2_str)
+    os.remove(tarfile2_str)
 
-    return (dumpfile, listfile)
+    return (dumpfile_str, listfile_str)
 
 def _download_test_w1_w2_1998(subset, darpa_directory, download_if_missing):
     w1_2_1998 = {'test_w1_mon_1998' : ['test_week1_monday', 'monday', 'week1'],
@@ -299,54 +344,68 @@ def _download_test_w1_w2_1998(subset, darpa_directory, download_if_missing):
                  'test_w2_thu_1998' : ['test_week2_thursday', 'thursday', 'week2'],
                  'test_w2_fri_1998' : ['test_week2_friday', 'friday', 'week2']}
 
-    darpa_file = urllib.URLopener()
+
     if subset in w1_2_1998:
         logging.info("Subset: %s", subset)
-        filepath = darpa_directory+"/"+w1_2_1998[subset][0]+"_1998-tcpdump.gz"
-        filepath2 = darpa_directory+"/"+w1_2_1998[subset][0]+"_1998-tcpdump.list.gz"
-        dumpfile = darpa_directory+"/"+w1_2_1998[subset][0]+"_1998-outside.tcpdump"
-        listfile = darpa_directory+"/"+w1_2_1998[subset][0]+"_1998-outside.tcpdump.list"
-        url = ("https://www.ll.mit.edu/ideval/data/1998/testing/"
-               +w1_2_1998[subset][2]+"/"+w1_2_1998[subset][1]+"/tcpdump.gz")
-        url2 = ("https://www.ll.mit.edu/ideval/data/1998/testing/"
-                +w1_2_1998[subset][2]+"/"+w1_2_1998[subset][1]+"/tcpdump.list.gz")
+        subset_str = darpa_directory+"/"+w1_2_1998[subset][0]
+        dumpfile_str = subset_str+"_1998-outside.tcpdump"
+        listfile_str = subset_str+"_1998-outside.tcpdump.list"
+        if _check_files([dumpfile_str, listfile_str]):
+            logging.info("Dump file exists: %s", dumpfile_str)
+            logging.info("List file exists: %s", listfile_str)
+            return (dumpfile_str, listfile_str)
+        #Implicit else
+        #Local files doesn't exist
+        tarfile1_str = subset_str+"_1998-tcpdump.gz"
+        tarfile2_str = subset_str+"_1998-tcpdump.list.gz"
+        inter_url = w1_2_1998[subset][2]+"/"+w1_2_1998[subset][1]
+        url1 = ("https://www.ll.mit.edu/ideval/data/1998/testing/"+inter_url+
+                "/tcpdump.gz")
+        url2 = ("https://www.ll.mit.edu/ideval/data/1998/testing/"+inter_url+
+                "/tcpdump.list.gz")
     else:
         raise AttributeError("_download_test_w1_w2_1998: subset not valid")
-
-    #Downloading files'
-    if not os.path.isfile(filepath):
+    if not os.path.isfile(tarfile1_str):
         if not download_if_missing:
-            raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url, filepath)
-            darpa_file.retrieve(url, filepath)
-            logging.info("Download completed")
-    if not os.path.isfile(filepath2):
+            raise IOError("Data is not locally available")
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        logging.info("Downloading : %s to %s", url1, tarfile1_str)
+        darpa_down.retrieve(url1, tarfile1_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile1_str)
+    if not os.path.isfile(tarfile2_str):
         if not download_if_missing:
-            raise IOError("data is not locally available")
-        else:
-            logging.info("Downloading : %s to %s", url2, filepath2)
-            darpa_file.retrieve(url2, filepath2)
-            logging.info("Download completed")
-    #End of Download
+            raise IOError("Data is not locally available")
+        #Implicit else
+        #Download files
+        darpa_down = urllib.URLopener()
+        logging.info("Downloading : %s to %s", url2, tarfile2_str)
+        darpa_down.retrieve(url2, tarfile2_str)
+        logging.info("Download completed")
+        #End of Download
+    else:
+        logging.info("Local tar file exists: %s", tarfile2_str)
 
-    #extracting dump file (gz)
-    logging.info("Extracting %s", filepath)
-    gz_file = gzip.open(filepath, 'rb')
-    output_file = open(dumpfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
-    #extracting list file (gz)
-    logging.info("Extracting %s", filepath2)
-    gz_file = gzip.open(filepath2, 'rb')
-    output_file = open(listfile, 'wb')
-    output_file.write(gz_file.read())
-    gz_file.close()
-    output_file.close()
+    #Extracting dump file (gz)
+    logging.info("Extracting %s", tarfile1_str)
+    with gzip.open(tarfile1_str, 'rb') as tarfile1_h:
+        with open(dumpfile_str, 'wb') as dumpfile_h:
+            dumpfile_h.write(tarfile1_h.read())
+    #Extracting list file (gz)
+    logging.info("Extracting %s", tarfile2_str)
+    with gzip.open(tarfile2_str, 'rb') as tarfile2_h:
+        with open(listfile_str, 'wb') as listfile_h:
+            listfile_h.write(tarfile2_h.read())
+    logging.info("Deleting tar file: %s", tarfile1_str)
+    os.remove(tarfile1_str)
+    logging.info("Deleting tar file: %s", tarfile2_str)
+    os.remove(tarfile2_str)
 
-    return (dumpfile, listfile)
-
+    return (dumpfile_str, listfile_str)
 
 def fetch_darpa_intrusion(subset='sample_1998', data_home=None,
                           download_if_missing=True):

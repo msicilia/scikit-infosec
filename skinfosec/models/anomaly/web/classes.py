@@ -8,7 +8,7 @@ import pandas as pd
 from apache_log_parser import make_parser
 from ..base import BaseAnomalyDetector
 
-def preprocess_requests(data, log_format="CLF"):
+def preprocess_requests(data, log_format):
     """Gets data in Common Log File Format (CLF).
     Returns
     -------
