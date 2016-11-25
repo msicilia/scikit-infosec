@@ -13,6 +13,25 @@ import pandas as pd
 import numpy as np
 import dateutil.parser
 
+from cpe import CPE
+from cpe.cpe1_1 import CPE1_1
+from cpe.cpe2_3 import CPE2_3
+from cpe.cpe2_3_wfn import CPE2_3_WFN
+from cpe.cpe2_3_uri import CPE2_3_URI
+from cpe.cpe2_3_fs import CPE2_3_FS
+
+
+def list_to_string(lista):
+            
+            if lista == []:
+                return np.nan
+            else:
+                for elem in lista:
+                    str_unique = ""
+                    str_unique += str(elem) + ","
+                return str_unique[:-1]
+
+
 class CVE(object):
     
     """A representation of the CVE database.
@@ -20,21 +39,20 @@ class CVE(object):
     
     list_cve_entries = []
     
-    def __init__(self, url, download=True):
+    def __init__(self, url, download=True, debug=False):
         """Create a representation of the Common Vulnerabilities and
         Exposures (CVE) database from the NVD Data Feeds:
         https://nvd.nist.gov/download.cfm
         """
         self.url = url
         if(download):
-            file_downladed = wget.download(url)
-            self.url = str(file_downladed)
+            file_downloaded = wget.download(url)
+            self.url = str(file_downloaded)
         
-        self.parse_cve_database()
+        self.parse_cve_database(debug)
         
-    
-            
-    def parse_cve_database(self):
+
+    def parse_cve_database(self, debug=False):
         
         """
         Parse .gz downloaded file to list of CVEEntries
@@ -47,12 +65,27 @@ class CVE(object):
         # for namespaces
         vuln_ns = "{http://scap.nist.gov/schema/vulnerability/0.4}"
         cvss_ns = "{http://scap.nist.gov/schema/cvss-v2/0.2}"
-        
+
+
         for row in parsed.entry:
+        
+            # CPEs List
+            cpe_list = []
+
+#            if debug:
+                #print(str(row.attrib.get("id")))
+            
             entry_ID = str(row.attrib.get("id"))
             cve_ID = str(row[vuln_ns+"cve-id"])
             published_datetime = dateutil.parser.parse(str(row[vuln_ns+"published-datetime"])).date()
             last_modified_datetime = dateutil.parser.parse(str(row[vuln_ns+"last-modified-datetime"])).date()
+            
+            if row.find(vuln_ns+"vulnerable-software-list") is not None:
+        
+                vul_sw_list = row[vuln_ns+"vulnerable-software-list"][vuln_ns+"product"]
+                for i in range(0, len(vul_sw_list)):
+                    cpe_list.append(str(vul_sw_list[i]))
+            
             
             if row.find(vuln_ns+"cvss") is not None:
         
@@ -87,13 +120,13 @@ class CVE(object):
             else:
                 cwe_id = np.nan
             
-            summary = str(row[vuln_ns+"summary"])
+            summary = ("" + row[vuln_ns+"summary"]).encode('utf-8')
             
             cve_entry = CVEEntry(entry_ID, cve_ID, published_datetime, last_modified_datetime,
                      score, access_vector_score, access_complexity_score,
                      authentication_score, confidentiality_impact_score,
                      integrity_impact_score, availability_impact_score,
-                     source, generated_on_datetime, cwe_id, summary)
+                     source, generated_on_datetime, cwe_id, summary, cpe_list)
             
             self.list_cve_entries.append(cve_entry)
 
@@ -121,14 +154,14 @@ class CVE(object):
         summary_list = []
 
         
-        for i in range(0, len(self.list_cve_entries)):
+        for i in self.list_cve_entries:
             
             entry_ID_list.append(i.entry_ID)
             cve_ID_list.append(i.cve_ID)
             published_datetime_list.append(i.published_datetime)
             last_modified_datetime_list.append(i.last_modified_datetime)
             score_list.append(i.score)
-            access_vector_score_list.append(i.access_vector.score)
+            access_vector_score_list.append(i.access_vector_score)
             access_complexity_score_list.append(i.access_complexity_score)
             authentication_score_list.append(i.authentication_score)
             confidentiality_impact_score_list.append(i.confidentiality_impact_score)
@@ -187,7 +220,7 @@ class CVEEntry(object):
                      score, access_vector_score, access_complexity_score,
                      authentication_score, confidentiality_impact_score,
                      integrity_impact_score, availability_impact_score,
-                     source, generated_on_datetime, cwe_id, summary):
+                     source, generated_on_datetime, cwe_id, summary, cpe_list):
             """Build a representation of a CVE entry from its id.
             """
             
@@ -206,6 +239,7 @@ class CVEEntry(object):
             self.generated_on_datetime = generated_on_datetime
             self.cwe_id = cwe_id
             self.summary = summary
+            self.cpe_list = cpe_list
             
             pass
 
@@ -225,11 +259,76 @@ class CVEEntry(object):
         def summary(self):
             pass
 
-        
-        def cpe_names(self):
+        def get_cpe_df(self, debug=False):
             """Get the list of CPE names for the vulnerability.
             """
-            pass      
+            
+            type_list = []
+            part_list = []
+            vendor_list = []
+            product_list = []
+            version_list = []
+            update_list = []
+            edition_list = []
+            language_list = []
+            sw_edition_list = []
+            target_sw_list = []
+            target_hw_list = []
+            other_list = []
+            published_datetime_list = []
+            
+            
+            for cpe_entry in self.cpe_list:
+                
+                #if(debug):
+                    #print(cpe_entry)
+                
+                try:
+                    
+                    cp = CPE(cpe_entry)
+                    
+                    if(cp.is_hardware()):
+                        type_list.append("HW")
+                    elif(cp.is_operating_system()):
+                        type_list.append("OS")
+                    elif(cp.is_application()):
+                        type_list.append("APP")
+                    else:
+                        type_list.append("UNDEFINED")
+    
+                    part_list.append(list_to_string(cp.get_part()))
+                    vendor_list.append(list_to_string(cp.get_vendor()))
+                    product_list.append(list_to_string(cp.get_product()))
+                    version_list.append(list_to_string(cp.get_version()))
+                    update_list.append(list_to_string(cp.get_update()))
+                    edition_list.append(list_to_string(cp.get_edition()))
+                    language_list.append(list_to_string(cp.get_language()))
+                    sw_edition_list.append(list_to_string(cp.get_software_edition()))
+                    target_sw_list.append(list_to_string(cp.get_target_software()))
+                    target_hw_list.append(list_to_string(cp.get_target_hardware()))
+                    other_list.append(list_to_string(cp.get_other()))
+                    
+                    published_datetime_list.append(self.published_datetime)
+                    
+                except Exception as inst:
+                    print(inst)
+            
+            data = pd.DataFrame()
+            data['type'] = type_list
+            data['part'] = part_list
+            data['vendor'] = vendor_list
+            data['product'] = product_list
+            data['version'] = version_list
+            data['update'] = update_list
+            data['edition'] = edition_list
+            data['language'] = language_list
+            data['sw_edition'] = sw_edition_list
+            data['target_sw'] = target_sw_list
+            data['target_hw'] = target_hw_list
+            data['other'] = other_list
+            data['published_datetime'] = published_datetime_list
+
+            return data     
         
         def to_string(self):
             
