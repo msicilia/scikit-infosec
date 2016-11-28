@@ -1,1 +1,4 @@
 scikit-learn
+pyshark
+apache_log_parser
+pandas
