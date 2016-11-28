@@ -31,15 +31,15 @@ def preprocess_requests(data, log_format):
         parser = make_parser('%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"')
     else:
         raise ValueError("format must be CLF or Combined")
-    #X = pd.DataFrame(columns=cols)
-    #Temporary list to feed the final DataFrame (Performance)
-    tmp = []
+
+    #Temporary list to feed the final DataFrame (for better performance)
+    tmp_lst = []
     for line in data:
         parsed = parser(line)
         filtered = {k: v for k, v in parsed.items() if k in cols}
-        tmp.append(filtered)
+        tmp_lst.append(filtered)
         #X = X.append(filtered, ignore_index=True)
-    X = pd.DataFrame(tmp, columns=cols)
+    X = pd.DataFrame(tmp_lst, columns=cols)
     return X
 
 class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
@@ -93,6 +93,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         icd.append(sum(char_freq[16:256]))
         self.attribute_models_["icd"] = icd
 
+        ##Verifying distinct sets of parameters
         param_sets = []
         for index, row in X.iterrows():
             params = urlparse.parse_qs(urlparse.urlsplit(row.request_url).query)
@@ -114,28 +115,30 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         """
         result = {}
         #Temporary list to feed the final DataFrame (Performance)
-        tmp_lst = []
+        uri_length_lst = []
         try:
             norm_model = self.attribute_models_["uri_length"]
         except AttributeError:
             logging.warning('RequestAnomalyDetector: call to preditct() without previous fit()')
             return None
 
+        #Checking URI length
         for index, row in X.iterrows():
             # TODO: Check more anomaly models
             if len(row.request_url) > norm_model[0] + 2*norm_model[1]:
-                tmp_lst.append(True)
+                uri_length_lst.append(True)
             else:
-                tmp_lst.append(False)
+                uri_length_lst.append(False)
 
-        anomalous = pd.DataFrame(index=X.index, data=tmp_lst, columns=["uri_length"])
+        anomalous = pd.DataFrame(index=X.index, data=uri_length_lst, columns=["uri_length"])
         result["uri_length"] = anomalous.copy()
 
-        tmp_lst = []
+        #Checking character distribution
+        char_dist_lst = []
         for index, row in X.iterrows():
             char_freq = []
             if len(row.request_url) == 0:
-                tmp_lst.append(0.0)
+                char_dist_lst.append(0.0)
                 continue
             for i in range(256):
                 char_count = row.request_url.count(self.all_ascii[i])
@@ -151,11 +154,12 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
             #Computing x^2 value
             x2_value = chisquare(icd, [self.attribute_models_["icd"][i]*
                                        len(row.request_url) for i in range(6)])
-            tmp_lst.append(x2_value.pvalue)
+            char_dist_lst.append(x2_value.pvalue)
         anomalous = pd.DataFrame(index=X.index, data=tmp_lst, columns=["pvalue"])
         result["pvalue"] = anomalous.copy()
 
-        tmp_lst = []
+        #Checking sets of parameters
+        param_sets_lst = []
         for index, row in X.iterrows():
             params = urlparse.parse_qs(urlparse.urlsplit(row.request_url).query)
             detected = False
@@ -163,8 +167,9 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                 keys_set = set(params.keys())
                 if keys_set not in self.attribute_models_["param_sets"]:
                     detected = True
-            tmp_lst.append(detected)
-        anomalous = pd.DataFrame(index=X.index, data=tmp_lst, columns=["param_sets"])
+            param_sets_lst.append(detected)
+        anomalous = pd.DataFrame(index=X.index, data=param_sets_lst,
+                                 columns=["param_sets"])
         result["param_sets"] = anomalous.copy()
 
         return result
