@@ -155,7 +155,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
             x2_value = chisquare(icd, [self.attribute_models_["icd"][i]*
                                        len(row.request_url) for i in range(6)])
             char_dist_lst.append(x2_value.pvalue)
-        anomalous = pd.DataFrame(index=X.index, data=tmp_lst, columns=["pvalue"])
+        anomalous = pd.DataFrame(index=X.index, data=char_dist_lst, columns=["pvalue"])
         result["pvalue"] = anomalous.copy()
 
         #Checking sets of parameters
