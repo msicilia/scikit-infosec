@@ -1,78 +1,51 @@
+import logging
+from sklearn.cluster import KMeans
 from skinfosec.datasets import darpa_intrusion
 
-import logging
-from timeit import default_timer as timer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='sample_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_4hour_1998')
+'''
+Possible subsets
 
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_mon_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_tue_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_wed_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_thu_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w1_fri_1998')
+'sample_1998'
+'train_4hour_1998'
 
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_mon_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_tue_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_wed_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_thu_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w2_fri_1998')
+'train_w1_mon_1998', 'train_w1_tue_1998', 'train_w1_wed_1998',
+'train_w1_thu_1998', 'train_w1_fri_1998', 'train_w2_mon_1998',
+'train_w2_tue_1998', 'train_w2_wed_1998', 'train_w2_thu_1998',
+'train_w2_fri_1998'
 
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_mon_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_tue_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_wed_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3thu_1998')
-#data = darpa_intrusion.fetch_darpa_intrusion(subset='train_w3_fri_1998')
+'train_w3_mon_1998', 'train_w3_tue_1998', 'train_w3_wed_1998',
+'train_w3_thu_1998', 'train_w3_fri_1998', 'train_w4_tue_1998',
+'train_w4_wed_1998', 'train_w4_thu_1998', 'train_w4_fri_1998',
+'train_w5_mon_1998', 'train_w5_tue_1998', 'train_w5_wed_1998',
+'train_w5_thu_1998', 'train_w5_fri_1998', 'train_w6_mon_1998',
+'train_w6_tue_1998', 'train_w6_wed_1998', 'train_w6_thu_1998',
+'train_w6_fri_1998', 'train_w7_mon_1998', 'train_w7_tue_1998',
+'train_w7_wed_1998', 'train_w7_thu_1998', 'train_w7_fri_1998']
 
-data = darpa_intrusion.fetch_darpa_intrusion(subset='test_w1_mon_1998')
+'test_w1_mon_1998', 'test_w1_tue_1998', 'test_w1_wed_1998',
+'test_w1_thu_1998', 'test_w1_fri_1998', 'test_w2_mon_1998',
+'test_w2_tue_1998', 'test_w2_wed_1998', 'test_w2_thu_1998',
+'test_w2_fri_1998']
+'''
 
+data = darpa_intrusion.fetch_darpa_intrusion(subset='train_4hour_1998')
 
 X = data[0]
-Y = data[1]
-print X.info()
-#print Y.axes
-X1 = X[['ip_checksum_status','ip_flags_df','ip_flags_mf','ip_frag_offset',
-'ip_hdr_len','ip_len','ip_ttl','tcp_ack','tcp_dstport','tcp_srcport']]
 
-print X1
+X1 = X[['ip_checksum_status', 'ip_flags_df', 'ip_flags_mf', 'ip_frag_offset',
+'ip_hdr_len', 'ip_len', 'ip_ttl', 'tcp_ack', 'tcp_dstport', 'tcp_srcport']]
 
-'''
-
-tcp_flags
-tcp_flags_ack
-tcp_flags_cwr
-tcp_flags_ecn
-tcp_flags_fin
-tcp_flags_ns
-tcp_flags_push
-tcp_flags_res
-tcp_flags_reset
-tcp_flags_str
-tcp_flags_syn
-tcp_flags_urg
-tcp_hdr_len
-tcp_len
-tcp_nxtseq
-tcp_option_kind
-tcp_option_len
-tcp_options
-tcp_options_mss
-tcp_options_mss_val
-tcp_port
-tcp_segment_data
-tcp_seq
-
-tcp_stream
-tcp_urgent_pointer
-tcp_window_size
-tcp_window_size_scalefactor
-tcp_window_size_value
-'''
-from sklearn.cluster import KMeans
 kmeans_model = KMeans(n_clusters=5, random_state=1)
 kmeans_model.fit(X1)
 
-labels = kmeans_model.labels_
+data2 = darpa_intrusion.fetch_darpa_intrusion(subset='sample_1998')
+X2 = data2[0]
+X3 = X2[['ip_checksum_status', 'ip_flags_df', 'ip_flags_mf', 'ip_frag_offset',
+'ip_hdr_len', 'ip_len', 'ip_ttl', 'tcp_ack', 'tcp_dstport', 'tcp_srcport']]
+
+labels = kmeans_model.predict(X3)
+
 print labels
