@@ -18,9 +18,9 @@ ad.fit(X)
 
 anomalies = ad.predict(X)
 
-#print anomalies
+print(anomalies)
 #anon_uri_len = anomalies['uri_length']
-#print anon_uri_len.loc[anon_uri_len['uri_length'] == True]
+print(anomalies.loc[anomalies['uri_length'] == 1])
 
 end = timer()
 print(end - start)

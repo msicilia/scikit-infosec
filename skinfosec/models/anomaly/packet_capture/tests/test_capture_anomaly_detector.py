@@ -12,5 +12,5 @@ def test_preprocess_capture():
     """
     X = preprocess_capture("capture.pcapng")
     X.fillna(0, inplace=True)
-    print X.head()
-    print X.axes
+    print(X.head())
+    print(X.axes)

@@ -48,4 +48,4 @@ X3 = X2[['ip_checksum_status', 'ip_flags_df', 'ip_flags_mf', 'ip_frag_offset',
 
 labels = kmeans_model.predict(X3)
 
-print labels
+print(labels)
