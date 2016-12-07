@@ -3,10 +3,11 @@ Classes and functions for anomaly detection over webserver log files.
 """
 
 import logging
-import string
-import urlparse
+#import string
+import urllib.parse
 from scipy.stats import chisquare
 from sklearn.base import BaseEstimator, ClusterMixin
+from sklearn.cluster import KMeans
 import pandas as pd
 from apache_log_parser import make_parser
 from ..base import BaseAnomalyDetector
@@ -47,7 +48,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
     Parameters
     ----------
    """
-    all_ascii = string.join([chr(x) for x in range(256)], '')
+    all_ascii = ''.join([chr(x) for x in range(256)])
 
     def __init__(self):
         self.attribute_models_ = {}
@@ -113,7 +114,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         Features are characteristics of the requests.
         New data to check.
         """
-        result = {}
+        result = []
         #Temporary list to feed the final DataFrame (Performance)
         uri_length_lst = []
         try:
@@ -126,12 +127,12 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         for index, row in X.iterrows():
             # TODO: Check more anomaly models
             if len(row.request_url) > norm_model[0] + 2*norm_model[1]:
-                uri_length_lst.append(True)
+                uri_length_lst.append(1)
             else:
-                uri_length_lst.append(False)
+                uri_length_lst.append(0)
 
         anomalous = pd.DataFrame(index=X.index, data=uri_length_lst, columns=["uri_length"])
-        result["uri_length"] = anomalous.copy()
+        result.append(anomalous.copy())
 
         #Checking character distribution
         char_dist_lst = []
@@ -156,20 +157,33 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                                        len(row.request_url) for i in range(6)])
             char_dist_lst.append(x2_value.pvalue)
         anomalous = pd.DataFrame(index=X.index, data=char_dist_lst, columns=["pvalue"])
-        result["pvalue"] = anomalous.copy()
+        result.append(anomalous.copy())
 
         #Checking sets of parameters
         param_sets_lst = []
         for index, row in X.iterrows():
             params = urlparse.parse_qs(urlparse.urlsplit(row.request_url).query)
-            detected = False
+            detected = 0
             if len(params) > 0:
                 keys_set = set(params.keys())
                 if keys_set not in self.attribute_models_["param_sets"]:
-                    detected = True
+                    detected = 1
             param_sets_lst.append(detected)
         anomalous = pd.DataFrame(index=X.index, data=param_sets_lst,
                                  columns=["param_sets"])
-        result["param_sets"] = anomalous.copy()
+        result.append(anomalous.copy())
+        result_df = pd.concat(result, axis=1)
 
-        return result
+        kmeans = KMeans(n_clusters=2)
+        kmeans.fit(result_df)
+
+        print(kmeans.labels_)
+        print(kmeans.cluster_centers_)
+
+
+        kmeans.predict(result_df)
+        for l in kmeans.labels_:
+            print(l)
+
+
+        return result_df
