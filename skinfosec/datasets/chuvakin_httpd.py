@@ -9,7 +9,7 @@ anonymized or modified in any way (just as they came from the logging system)
 """
 import logging
 import os
-import urllib
+import urllib.request
 import tarfile
 import shutil
 from ..models.anomaly.web import classes as anon_web
@@ -17,7 +17,7 @@ from ..models.anomaly.web import classes as anon_web
 def _fetch_extract(chuvakin_directory, final_file_str, tarfile_str):
     url = 'http://log-sharing.dreamhosters.com/hnet-hon-var-log-02282006.tgz'
     if not os.path.isfile(tarfile_str):
-        chuvakin_download = urllib.URLopener()
+        chuvakin_download = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url, tarfile_str)
         chuvakin_download.retrieve(url, tarfile_str)
         logging.info("Download completed")

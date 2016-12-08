@@ -4,7 +4,7 @@ Classes and functions for anomaly detection over webserver log files.
 
 import logging
 #import string
-import urllib.parse
+import urllib.parse as urlparse
 from scipy.stats import chisquare
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.cluster import KMeans
@@ -177,13 +177,9 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         kmeans = KMeans(n_clusters=2)
         kmeans.fit(result_df)
 
-        print(kmeans.labels_)
-        print(kmeans.cluster_centers_)
-
+        #print(kmeans.labels_)
+        #print(kmeans.cluster_centers_)
 
         kmeans.predict(result_df)
-        for l in kmeans.labels_:
-            print(l)
-
 
         return result_df

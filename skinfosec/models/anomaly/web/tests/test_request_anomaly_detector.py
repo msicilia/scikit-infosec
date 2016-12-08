@@ -31,5 +31,5 @@ def test_anomaly_detector():
     X = preprocess_requests(content)
     ad = ad.fit(X)
     anomalies = ad.predict(X)
-    print anomalies["uri_length"].head()
+    print(anomalies["uri_length"].head())
     assert False

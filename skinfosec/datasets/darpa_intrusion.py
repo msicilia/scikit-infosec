@@ -8,7 +8,7 @@ Lincoln Laboratory for evaluation of computer network intrusion detection system
 """
 import logging
 import os
-import urllib
+import urllib.request
 import tarfile
 import gzip
 import shutil
@@ -72,7 +72,7 @@ def _download_sample_1998(darpa_directory, download_if_missing):
             raise IOError("data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         url = "https://www.ll.mit.edu/ideval/data/1998/training/sample/DARPA_eval_b.tar.gz"
         logging.info("Downloading : %s to %s", url, tarfile_str)
         darpa_down.retrieve(url, tarfile_str)
@@ -119,7 +119,7 @@ def _download_train_4hour_1998(darpa_directory, download_if_missing):
             raise IOError("data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/tcpdump.gz"
         logging.info("Downloading : %s to %s", url, tarfile_str)
         darpa_down.retrieve(url, tarfile_str)
@@ -153,7 +153,7 @@ def _download_train_4hour_1998(darpa_directory, download_if_missing):
             raise IOError("data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         url = "https://www.ll.mit.edu/ideval/data/1998/training/four_hours/fourhour.tar.gz"
         logging.info("Downloading : %s to %s", url, tarfile_str)
         darpa_down.retrieve(url, tarfile_str)
@@ -211,7 +211,7 @@ def _download_train_w1_w2_1998(subset, darpa_directory, download_if_missing):
             raise IOError("data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url, tarfile_str)
         darpa_down.retrieve(url, tarfile_str)
         logging.info("Download completed")
@@ -295,7 +295,7 @@ def _download_train_w3_w7_1998(subset, darpa_directory, download_if_missing):
             raise IOError("Data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url1, tarfile1_str)
         darpa_down.retrieve(url1, tarfile1_str)
         logging.info("Download completed")
@@ -307,7 +307,7 @@ def _download_train_w3_w7_1998(subset, darpa_directory, download_if_missing):
             raise IOError("Data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url2, tarfile2_str)
         darpa_down.retrieve(url2, tarfile2_str)
         logging.info("Download completed")
@@ -370,7 +370,7 @@ def _download_test_w1_w2_1998(subset, darpa_directory, download_if_missing):
             raise IOError("Data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url1, tarfile1_str)
         darpa_down.retrieve(url1, tarfile1_str)
         logging.info("Download completed")
@@ -382,7 +382,7 @@ def _download_test_w1_w2_1998(subset, darpa_directory, download_if_missing):
             raise IOError("Data is not locally available")
         #Implicit else
         #Download files
-        darpa_down = urllib.URLopener()
+        darpa_down = urllib.request.URLopener()
         logging.info("Downloading : %s to %s", url2, tarfile2_str)
         darpa_down.retrieve(url2, tarfile2_str)
         logging.info("Download completed")
