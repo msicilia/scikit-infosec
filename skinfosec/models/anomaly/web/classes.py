@@ -13,10 +13,15 @@ from apache_log_parser import make_parser
 from ..base import BaseAnomalyDetector
 
 def preprocess_requests(data, log_format):
-    """Gets data in Common Log File Format (CLF).
-    Returns
-    -------
-    A dataframe with the pased data.
+    """Gets logs in NCSA Common Log Format (CLF) or NCSA Combined.
+
+    Args:
+        data: File handle for log file.
+        log_format: Either "CLF" or "Combined".
+
+    Returns:
+        pandas.DataFrame with the parsed data.
+
     """
     #SEE: https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
     if log_format == "CLF":
@@ -34,13 +39,12 @@ def preprocess_requests(data, log_format):
         raise ValueError("format must be CLF or Combined")
 
     #Temporary list to feed the final DataFrame (for better performance)
-    tmp_lst = []
+    log_lst = []
     for line in data:
         parsed = parser(line)
         filtered = {k: v for k, v in parsed.items() if k in cols}
-        tmp_lst.append(filtered)
-        #X = X.append(filtered, ignore_index=True)
-    X = pd.DataFrame(tmp_lst, columns=cols)
+        log_lst.append(filtered)
+    X = pd.DataFrame(log_lst, columns=cols)
     return X
 
 class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
@@ -62,7 +66,6 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         Features are characteristics of the requests.
         """
         #TODO: Add other attributes of Web traffic.
-        # Now it checks only URL length.
         # Get mean and std
         lengths = X["request_url"].str.len()
         self.attribute_models_["uri_length"] = (lengths.mean(), lengths.std())
