@@ -445,6 +445,7 @@ def fetch_darpa_intrusion(subset='sample_1998', data_home=None,
 
 
     """
+    #TODO include hash checks for downloaded and extraction extracted files
     #Data folder checks
     if data_home is None:
         base_directory = os.path.expanduser("~")
