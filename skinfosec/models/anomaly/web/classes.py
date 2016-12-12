@@ -85,8 +85,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                 char_freq[i] += freq
             count_non_empty += 1
             if index % 1000 == 0:
-                logging.info('RequestAnomalyDetector - fit - char dist: Processed \
-                             %d requests', index)
+                logging.info('RequestAnomalyDetector - fit - char dist: Processed %d requests', index)
         for i in range(256):
             char_freq[i] /= count_non_empty
         char_freq.sort(reverse=True)
@@ -111,7 +110,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
             params = urlparse.parse_qsl(urlparse.urlsplit(row.request_url).query)
             param_list = [p[0] for p in params]
             if param_list not in param_lists:
-                param_lists.append(param_list)
+                param_lists.append(param_list)                
         self.attribute_models_["param_sets"] = param_sets
         self.attribute_models_["param_lists"] = param_lists
 
@@ -142,8 +141,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
             else:
                 uri_length_lst.append(0)
 
-        anomalous = pd.DataFrame(index=X.index, data=uri_length_lst,
-                                 columns=["uri_length"])
+        anomalous = pd.DataFrame(index=X.index, data=uri_length_lst, columns=["uri_length"])
         result.append(anomalous.copy())
 
         #Checking character distribution
@@ -166,8 +164,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
             ccd.append(sum(char_freq[16:256]))
 
             #Computing x^2 value
-            x2_value = chisquare(ccd, [icd[i]*len(row.request_url) for i in
-                                 (0, 1, 2, 3, 4, 5)])
+            x2_value = chisquare(ccd, [icd[i]*len(row.request_url) for i in (0,1,2,3,4,5)])
             char_dist_lst.append(x2_value.pvalue)
         anomalous = pd.DataFrame(index=X.index, data=char_dist_lst, columns=["pvalue"])
         result.append(anomalous.copy())
@@ -206,8 +203,6 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         return result_df
 
     def kmeans(self):
-        """ Applies kmeans over the predicted attributes.
-        """
         kmeans = KMeans(n_clusters=2)
         X = self.attribute_models_["predict_results"]
         kmeans.fit(X)
