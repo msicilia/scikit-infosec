@@ -56,6 +56,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
 
     def __init__(self):
         self.attribute_models_ = {}
+        self.kmeans_labels = None
         return
 
     def fit(self, X, y=None):
@@ -176,13 +177,15 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                                  columns=["param_sets"])
         result.append(anomalous.copy())
         result_df = pd.concat(result, axis=1)
-
-        kmeans = KMeans(n_clusters=2)
-        kmeans.fit(result_df)
-
-        #print(kmeans.labels_)
-        #print(kmeans.cluster_centers_)
-
-        kmeans.predict(result_df)
+        self.attribute_models_["predict_results"] = result_df
 
         return result_df
+
+    def kmeans(self):
+        kmeans = KMeans(n_clusters=2)
+        X = self.attribute_models_["predict_results"]
+        kmeans.fit(X)
+
+        self.kmeans_labels = kmeans.predict(X)
+
+        return self.kmeans_labels
