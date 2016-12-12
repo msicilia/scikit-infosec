@@ -98,15 +98,21 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
         icd.append(sum(char_freq[16:256]))
         self.attribute_models_["icd"] = icd
 
-        ##Verifying distinct sets of parameters
+        ##Verifying distinct sets and lists of parameters
         param_sets = []
+        param_lists = []
         for index, row in X.iterrows():
             params = urlparse.parse_qs(urlparse.urlsplit(row.request_url).query)
             if len(params) > 0:
                 keys_set = set(params.keys())
                 if keys_set not in param_sets:
                     param_sets.append(set(params.keys()))
+            params = urlparse.parse_qsl(urlparse.urlsplit(row.request_url).query)
+            param_list = [p[0] for p in params]
+            if param_list not in param_lists:
+                param_lists.append(param_list)                
         self.attribute_models_["param_sets"] = param_sets
+        self.attribute_models_["param_lists"] = param_lists
 
         return self
 
@@ -140,6 +146,7 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
 
         #Checking character distribution
         char_dist_lst = []
+        icd = self.attribute_models_["icd"]
         for index, row in X.iterrows():
             char_freq = []
             if len(row.request_url) == 0:
@@ -149,22 +156,22 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                 char_count = row.request_url.count(self.all_ascii[i])
                 char_freq.append(char_count)
             char_freq.sort(reverse=True)
-            icd = [char_freq[0]]
-            icd.append(sum(char_freq[1:4]))
-            icd.append(sum(char_freq[4:7]))
-            icd.append(sum(char_freq[7:12]))
-            icd.append(sum(char_freq[12:16]))
-            icd.append(sum(char_freq[16:256]))
+            ccd = [char_freq[0]]
+            ccd.append(sum(char_freq[1:4]))
+            ccd.append(sum(char_freq[4:7]))
+            ccd.append(sum(char_freq[7:12]))
+            ccd.append(sum(char_freq[12:16]))
+            ccd.append(sum(char_freq[16:256]))
 
             #Computing x^2 value
-            x2_value = chisquare(icd, [self.attribute_models_["icd"][i]*
-                                       len(row.request_url) for i in range(6)])
+            x2_value = chisquare(ccd, [icd[i]*len(row.request_url) for i in (0,1,2,3,4,5)])
             char_dist_lst.append(x2_value.pvalue)
         anomalous = pd.DataFrame(index=X.index, data=char_dist_lst, columns=["pvalue"])
         result.append(anomalous.copy())
 
-        #Checking sets of parameters
+        #Checking sets and lists of parameters
         param_sets_lst = []
+        param_lists_lst = []
         for index, row in X.iterrows():
             params = urlparse.parse_qs(urlparse.urlsplit(row.request_url).query)
             detected = 0
@@ -173,9 +180,23 @@ class RequestAnomalyDetector(BaseEstimator, ClusterMixin, BaseAnomalyDetector):
                 if keys_set not in self.attribute_models_["param_sets"]:
                     detected = 1
             param_sets_lst.append(detected)
+
+            params = urlparse.parse_qsl(urlparse.urlsplit(row.request_url).query)
+            detected = 0
+            if len(params) > 0:
+                param_list = [p[0] for p in params]
+                if param_list not in self.attribute_models_["param_lists"]:
+                    detected = 1
+            param_lists_lst.append(detected)
+
         anomalous = pd.DataFrame(index=X.index, data=param_sets_lst,
                                  columns=["param_sets"])
         result.append(anomalous.copy())
+
+        anomalous = pd.DataFrame(index=X.index, data=param_sets_lst,
+                                 columns=["param_lists"])
+        result.append(anomalous.copy())
+
         result_df = pd.concat(result, axis=1)
         self.attribute_models_["predict_results"] = result_df
 
