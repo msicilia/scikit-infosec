@@ -18,9 +18,12 @@ ad.fit(X)
 
 anomalies = ad.predict(X)
 
-print(anomalies)
+#print(anomalies)
 #anon_uri_len = anomalies['uri_length']
-print(anomalies.loc[anomalies['uri_length'] == 1])
+#print(anomalies.loc[anomalies['uri_length'] == 1])
+ad.kmeans()
+for label in ad.kmeans_labels:
+    print(label)
 
 end = timer()
 print(end - start)
