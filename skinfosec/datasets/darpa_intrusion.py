@@ -84,7 +84,26 @@ def _download_sample_1998(darpa_directory, download_if_missing):
     #extracting first file (tar.gz)
     logging.info("Extracting %s", tarfile_str)
     with tarfile.open(tarfile_str, "r:gz") as tarfile_h:
-        tarfile_h.extractall(path=darpa_directory)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tarfile_h, path=darpa_directory)
     tmpfile_str = darpa_directory+"/DARPA_eval_b/sample_data01.tcpdump.gz"
     #extracting second file (gz)
     logging.info("Extracting %s", tmpfile_str)
@@ -131,7 +150,26 @@ def _download_train_4hour_1998(darpa_directory, download_if_missing):
     #extracting first file (tar)
     logging.info("Extracting %s", tarfile_str)
     with tarfile.open(tarfile_str, "r:") as tarfile_h:
-        tarfile_h.extractall(path=darpa_directory)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tarfile_h, path=darpa_directory)
     tmpfile_str = darpa_directory+"/outside.tcpdump.gz"
     #extracting second file (gz)
     logging.info("Extracting %s", tmpfile_str)
@@ -165,7 +203,26 @@ def _download_train_4hour_1998(darpa_directory, download_if_missing):
     logging.info("Extracting %s", tarfile_str)
     tmpdir_str = darpa_directory+"/fourhour"
     with tarfile.open(tarfile_str, "r:gz") as tarfile_h:
-        tarfile_h.extractall(path=darpa_directory)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tarfile_h, path=darpa_directory)
         shutil.move(tmpdir_str+"/data/tcpdump.list", listfile_str)
     #deleting intermediate folder
     try:
@@ -222,7 +279,26 @@ def _download_train_w1_w2_1998(subset, darpa_directory, download_if_missing):
     #extracting first file (tar)
     logging.info("Extracting %s", tarfile_str)
     with tarfile.open(tarfile_str, "r:") as tarfile_h:
-        tarfile_h.extractall(path=darpa_directory)
+        def is_within_directory(directory, target):
+            
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+        
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+            
+            return prefix == abs_directory
+        
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+        
+            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            
+        
+        safe_extract(tarfile_h, path=darpa_directory)
     #Extracting dump file (gz)
     tmpfile_str = darpa_directory+"/"+inter_dir+"/tcpdump.gz"
     logging.info("Extracting %s", tmpfile_str)
